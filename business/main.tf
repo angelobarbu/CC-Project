@@ -1,53 +1,3 @@
-## Define the provider (in this case, using the default provider for Docker)
-#terraform {
-# required_providers {
-#   docker = {
-#     source = "kreuzwerker/docker"
-#     version = "~> 2.13.0"
-#   }
-# }
-#}
-#
-#resource "docker_network" "app_network" {
-#  name = "app_network"
-#}
-#
-#provider "docker" {
-#  version = "~> 2.6"
-#  host    = "npipe:////.//pipe//docker_engine"
-#}
-#
-## Define the Spring Boot application container
-#resource "docker_container" "appBusiness" {
-#  name  = "appBusiness"
-#  image = "business:latest"
-#
-#  ports {
-#    internal = 54321
-#    external = 8080
-#  }
-#
-#  network_mode = docker_network.app_network.name
-#  env = [
-#    "SPRING_DATASOURCE_URL=jdbc:postgresql://appdb:5432/postgres_db",
-#    "SPRING_DATASOURCE_USERNAME=user",
-#    "SPRING_DATASOURCE_PASSWORD=password",
-#    "SPRING_JPA_HIBERNATE_DDL_AUTO=update",
-#  ]
-#}
-#
-## Define the PostgreSQL container
-#resource "docker_container" "appdb" {
-#  name  = "appdb"
-#  image = "postgres:latest"
-#  network_mode = docker_network.app_network.name
-#  env = [
-#    "POSTGRES_USER=user",
-#    "POSTGRES_PASSWORD=password",
-#    "POSTGRES_DB=postgres_db",
-#  ]
-#}
-
 terraform {
   required_providers {
     kubernetes = {
@@ -61,46 +11,44 @@ provider "kubernetes" {
   config_path = "C:/Users/anghe/.kube/config"
 }
 
-resource "kubernetes_namespace" "app_namespace" {
+resource "kubernetes_namespace" "product-store" {
   metadata {
-    name = "app-namespace"
+    name = "product-store"
   }
 }
 
-resource "kubernetes_deployment" "appBusiness" {
+resource "kubernetes_deployment" "store-app" {
   metadata {
-    name      = "app-business"
-    namespace = kubernetes_namespace.app_namespace.metadata[0].name
+    name      = "store-app"
+    namespace = kubernetes_namespace.product-store.metadata[0].name
   }
-
   spec {
     replicas = 1
 
     selector {
       match_labels = {
-        app = "app-business"
+        app = "store-app"
       }
     }
 
     template {
       metadata {
         labels = {
-          app = "app-business"
+          app = "store-app"
         }
       }
 
       spec {
         container {
-          name  = "app-business"
-          image = "business:latest"
-
+          image = "2y6cx0/business:latest"
+          name  = "store-app"
           port {
             container_port = 54321
           }
 
           env {
             name  = "SPRING_DATASOURCE_URL"
-            value = "jdbc:postgresql://appdb:5432/postgres_db"
+            value = "jdbc:postgresql://postgresql-db-service:5432/postgres_db"
           }
 
           env {
@@ -123,30 +71,32 @@ resource "kubernetes_deployment" "appBusiness" {
   }
 }
 
-resource "kubernetes_service" "appBusiness_service" {
+resource "kubernetes_service" "store-app-service" {
+
   metadata {
-    name      = "app-business-service"
-    namespace = kubernetes_namespace.app_namespace.metadata[0].name
+    name = "store-app-service"
+    namespace =  kubernetes_namespace.product-store.metadata[0].name
   }
 
   spec {
+    type = "NodePort"
+
     selector = {
-      app = "app-business"
+        app = "store-app"
     }
 
     port {
-      port        = 8080
+      port        = 54321
       target_port = 54321
+      node_port   = 30222
     }
-
-    type = "LoadBalancer"
   }
 }
 
-resource "kubernetes_deployment" "appdb" {
+resource "kubernetes_deployment" "postgresql-db" {
   metadata {
-    name      = "appdb"
-    namespace = kubernetes_namespace.app_namespace.metadata[0].name
+    name      = "postgresql-db"
+    namespace = kubernetes_namespace.product-store.metadata[0].name
   }
 
   spec {
@@ -154,21 +104,26 @@ resource "kubernetes_deployment" "appdb" {
 
     selector {
       match_labels = {
-        app = "appdb"
+        app = "postgresql-db"
       }
     }
 
     template {
       metadata {
         labels = {
-          app = "appdb"
+          app = "postgresql-db"
         }
       }
 
       spec {
         container {
-          name  = "appdb"
+          name  = "postgresql-db"
           image = "postgres:latest"
+
+          volume_mount {
+            mount_path     = "/var/lib/postgresql/data"
+            name           = "postgres-data"
+          }
 
           env {
             name  = "POSTGRES_USER"
@@ -185,6 +140,125 @@ resource "kubernetes_deployment" "appdb" {
             value = "postgres_db"
           }
         }
+
+        volume {
+          name = "postgresql-data"
+
+          persistent_volume_claim {
+            claim_name = kubernetes_persistent_volume_claim.postgres-pvc.metadata[0].name
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_service" "postgresql-db-service" {
+
+  metadata {
+    name = "postgresql-db-service"
+    namespace =  kubernetes_namespace.product-store.metadata[0].name
+  }
+
+  spec {
+    selector = {
+      app = "postgresql-db"
+    }
+
+    port {
+      port        = 5432
+      target_port = 5432
+    }
+  }
+}
+
+resource "kubernetes_deployment" "auth_app" {
+  metadata {
+    name = "auth-app"
+    namespace = kubernetes_namespace.product-store.metadata[0].name
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "auth-app"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "auth-app"
+        }
+      }
+
+      spec {
+        container {
+          image = "2y6cx0/auth-app:latest"
+          name  = "auth-app"
+          port {
+            container_port = 5000
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_service" "auth_app-service" {
+  metadata {
+    name = "auth-app-service"
+    namespace = kubernetes_namespace.product-store.metadata[0].name
+  }
+
+  spec {
+    selector = {
+      app = "auth-app"
+    }
+
+    type = "NodePort"
+    port {
+      node_port   = 30201
+      port        = 5000
+      target_port = 5000
+    }
+  }
+}
+
+resource "kubernetes_persistent_volume" "postgres-pv" {
+  metadata {
+    name      = "postgres-pv"
+  }
+
+  spec {
+    access_modes = ["ReadWriteOnce"]
+    capacity     = {
+      storage = "2Gi"
+    }
+
+    persistent_volume_source {
+      host_path {
+        path = "C:/Users/anghe/OneDrive/Desktop/Master-1/Cloud/data"
+      }
+    }
+  }
+}
+
+resource "kubernetes_persistent_volume_claim" "postgres-pvc" {
+  metadata {
+    name      = "postgres-pvc"
+#    namespace = kubernetes_namespace.product-store.metadata[0].name
+  }
+
+  spec {
+    access_modes = ["ReadWriteOnce"]
+    volume_name = kubernetes_persistent_volume.postgres-pv.metadata[0].name
+
+    resources {
+      requests = {
+        storage = "1Gi"
       }
     }
   }
