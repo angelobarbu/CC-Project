@@ -12,8 +12,8 @@ import os
 class Config:
     """Config class for Flask app"""
     SCHEDULER_API_ENABLED = True
-    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost/authdb'
-    # SQLALCHEMY_DATABASE_URI = 'postgresql://user:password@postgresql-db-service:5432/postgres_db'
+    # SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost/authdb' # For local testing
+    SQLALCHEMY_DATABASE_URI = 'postgresql://user:password@postgresql-db-service:5432/postgres_db'
     SECRET_KEY = os.urandom(24)
     
 
