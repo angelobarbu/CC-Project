@@ -120,10 +120,10 @@ resource "kubernetes_deployment" "postgresql-db" {
           name  = "postgresql-db"
           image = "postgres:latest"
 
-          volume_mount {
-            mount_path     = "/var/lib/postgresql/data"
-            name           = "postgres-data"
-          }
+#          volume_mount {
+#            mount_path     = "/var/lib/postgresql/data"
+#            name           = "postgres-data"
+#          }
 
           env {
             name  = "POSTGRES_USER"
@@ -141,13 +141,13 @@ resource "kubernetes_deployment" "postgresql-db" {
           }
         }
 
-        volume {
-          name = "postgresql-data"
-
-          persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim.postgres-pvc.metadata[0].name
-          }
-        }
+#        volume {
+#          name = "postgresql-data"
+#
+#          persistent_volume_claim {
+#            claim_name = kubernetes_persistent_volume_claim.postgres-pvc.metadata[0].name
+#          }
+#        }
       }
     }
   }
@@ -227,39 +227,57 @@ resource "kubernetes_service" "auth_app-service" {
   }
 }
 
-resource "kubernetes_persistent_volume" "postgres-pv" {
-  metadata {
-    name      = "postgres-pv"
-  }
 
-  spec {
-    access_modes = ["ReadWriteOnce"]
-    capacity     = {
-      storage = "2Gi"
-    }
 
-    persistent_volume_source {
-      host_path {
-        path = "C:/Users/anghe/OneDrive/Desktop/Master-1/Cloud/data"
-      }
-    }
-  }
-}
 
-resource "kubernetes_persistent_volume_claim" "postgres-pvc" {
-  metadata {
-    name      = "postgres-pvc"
-#    namespace = kubernetes_namespace.product-store.metadata[0].name
-  }
 
-  spec {
-    access_modes = ["ReadWriteOnce"]
-    volume_name = kubernetes_persistent_volume.postgres-pv.metadata[0].name
 
-    resources {
-      requests = {
-        storage = "1Gi"
-      }
-    }
-  }
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+#resource "kubernetes_persistent_volume" "postgres-pv" {
+#  metadata {
+#    name      = "postgres-pv"
+#  }
+#
+#  spec {
+#    access_modes = ["ReadWriteOnce"]
+#    capacity     = {
+#      storage = "2Gi"
+#    }
+#
+#    persistent_volume_source {
+#      host_path {
+#        path = "C:/Users/anghe/OneDrive/Desktop/Master-1/Cloud/data"
+#      }
+#    }
+#  }
+#}
+#
+#resource "kubernetes_persistent_volume_claim" "postgres-pvc" {
+#  metadata {
+#    name      = "postgres-pvc"
+##    namespace = kubernetes_namespace.product-store.metadata[0].name
+#  }
+#
+#  spec {
+#    access_modes = ["ReadWriteOnce"]
+#    volume_name = kubernetes_persistent_volume.postgres-pv.metadata[0].name
+#
+#    resources {
+#      requests = {
+#        storage = "1Gi"
+#      }
+#    }
+#  }
+#}
