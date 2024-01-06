@@ -1,4 +1,4 @@
-# auth_microservice.py
+"""Authentication and authorization microservice"""
 
 from flask import Flask, request, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
