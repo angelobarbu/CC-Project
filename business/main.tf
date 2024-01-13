@@ -48,7 +48,7 @@ resource "kubernetes_deployment" "store-app" {
 
           env {
             name  = "SPRING_DATASOURCE_URL"
-            value = "jdbc:postgresql://postgresql-db-service:5432/postgres_db"
+            value = "jdbc:postgresql://postgresql-db-service:30208/postgres_db"
           }
 
           env {
@@ -65,6 +65,12 @@ resource "kubernetes_deployment" "store-app" {
             name  = "SPRING_JPA_HIBERNATE_DDL_AUTO"
             value = "update"
           }
+
+          env {
+            name  = "SPRING_AUTH_SERVICE_URL"
+            value = "http://auth-app-service:30201/protected"
+          }
+
         }
       }
     }
@@ -166,7 +172,7 @@ resource "kubernetes_service" "postgresql-db-service" {
     }
 
     port {
-      port        = 5432
+      port        = 30208
       target_port = 5432
     }
   }
@@ -207,7 +213,7 @@ resource "kubernetes_deployment" "auth_app" {
   }
 }
 
-resource "kubernetes_service" "auth_app-service" {
+resource "kubernetes_service" "auth-app-service" {
   metadata {
     name = "auth-app-service"
     namespace = kubernetes_namespace.product-store.metadata[0].name
@@ -221,14 +227,134 @@ resource "kubernetes_service" "auth_app-service" {
     type = "NodePort"
     port {
       node_port   = 30201
-      port        = 5000
+      port        = 30201
       target_port = 5000
     }
   }
 }
 
+resource "kubernetes_deployment" "dbeaver" {
+  metadata {
+    name      = "dbeaver"
+    namespace = kubernetes_namespace.product-store.metadata[0].name
+  }
 
+  spec {
+    replicas = 1
 
+    selector {
+      match_labels = {
+        app = "dbeaver"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "dbeaver"
+        }
+      }
+
+      spec {
+        container {
+          name  = "dbeaver"
+          image = "dbeaver/cloudbeaver:latest"
+
+#          env {
+#            name  = "POSTGRES_USER"
+#            value = "user"
+#          }
+#
+#          env {
+#            name  = "POSTGRES_PASSWORD"
+#            value = "password"
+#          }
+#
+#          env {
+#            name  = "POSTGRES_DB"
+#            value = "postgres_db"
+#          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_service" "dbeaver-service" {
+
+  metadata {
+    name = "dbeaver-service"
+    namespace =  kubernetes_namespace.product-store.metadata[0].name
+  }
+
+  spec {
+    selector = {
+      app = "dbeaver"
+    }
+
+    type = "NodePort"
+
+    port {
+      port        = 30209
+      node_port   = 30209
+      target_port = 8978
+    }
+  }
+}
+
+resource "kubernetes_deployment" "portainer" {
+  metadata {
+    name      = "portainer"
+    namespace = kubernetes_namespace.product-store.metadata[0].name
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "portainer"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "portainer"
+        }
+      }
+
+      spec {
+        container {
+          name  = "portainer"
+          image = "portainer/portainer-ce:latest"
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_service" "portainer-service" {
+
+  metadata {
+    name = "portainer-service"
+    namespace =  kubernetes_namespace.product-store.metadata[0].name
+  }
+
+  spec {
+    selector = {
+      app = "portainer"
+    }
+
+    type = "LoadBalancer"
+
+    port {
+      port        = 30210
+      node_port   = 30210
+      target_port = 9000
+    }
+  }
+}
 
 
 

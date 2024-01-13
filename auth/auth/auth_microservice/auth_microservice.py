@@ -13,7 +13,7 @@ class Config:
     """Config class for Flask app"""
     SCHEDULER_API_ENABLED = True
     # SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost/authdb' # For local testing
-    SQLALCHEMY_DATABASE_URI = 'postgresql://user:password@postgresql-db-service:5432/postgres_db'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://user:password@postgresql-db-service:30208/postgres_db'
     SECRET_KEY = os.urandom(24)
     
 
@@ -169,4 +169,4 @@ if __name__ == '__main__':
             print("Connected to the database successfully.")
         except Exception as e:
             print("Failed to connect to the database: ", e)
-    app.run(debug=True)
+    app.run(host='0.0.0.0', debug=True)
