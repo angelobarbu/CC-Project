@@ -12,6 +12,5 @@ Microservicii deployate:
 - Autentificare si autorizare implementat folosind Python;
 - Baza de date PostgreSQL;
 - Utilitar de gestiune DBeaver;
-- Utilitar grafic de gestiune cluster Portainer;
  
 Deploy-ul independent al microserviciile si infrastructura de Kubernetes a fost implementata folosind Terraform.

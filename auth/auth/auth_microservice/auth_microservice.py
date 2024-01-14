@@ -52,12 +52,20 @@ def token_required(f):
         # Check if token is provided
         token = request.headers.get('Authorization')
 
+        print('before token =', token)
+
         if not token:
             return 'Token is missing', 401
 
+        token = token.split(' ')
+        if len(token) < 2:
+            return 'Token is missing', 402
+        
+        token = token[1]
+
         # Check if token is valid
 
-        stored_token = Token.query.filter_by(token=token, is_active=True).first()
+        stored_token = Token.query.filter_by(token=token).first()
         print(stored_token, flush=True)
         app.logger.info(stored_token)
 

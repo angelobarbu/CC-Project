@@ -29,6 +29,9 @@ public class Controller implements ErrorController {
     public ResponseEntity<List<Product>> getAllProducts(HttpServletRequest request) {
         boolean isValidToken = tokenValidationService.validateToken(request.getHeader("Authorization"));
         System.out.println("IS VALID? " + isValidToken);
+        if (!isValidToken)
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+
         try {
             List<Product> products = new ArrayList<>(productRepository.findAll());
 
@@ -41,11 +44,14 @@ public class Controller implements ErrorController {
             e.printStackTrace();
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+
     }
 
     @GetMapping("/products/{id}")
     public ResponseEntity<Product> getProductById(int id, HttpServletRequest request) {
         boolean isValidToken = tokenValidationService.validateToken(request.getHeader("Authorization"));
+        if (!isValidToken)
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
 
         try {
             Optional<Product> product = productRepository.findById(id);
@@ -62,6 +68,8 @@ public class Controller implements ErrorController {
     @PostMapping("/products/{id}")
     public ResponseEntity<Product> postProduct(Product product, HttpServletRequest request) {
         boolean isValidToken = tokenValidationService.validateToken(request.getHeader("Authorization"));
+        if (!isValidToken)
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
 
         try {
             System.out.println("POST");
@@ -80,6 +88,8 @@ public class Controller implements ErrorController {
     @PutMapping("/products/{id}")
     public ResponseEntity<Product> putProduct(Product product, HttpServletRequest request) {
         boolean isValidToken = tokenValidationService.validateToken(request.getHeader("Authorization"));
+        if (!isValidToken)
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
 
         try {
             System.out.println("PUT");
