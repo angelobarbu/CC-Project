@@ -15,12 +15,13 @@ public class TokenValidationService {
     }
 
     public boolean validateToken(String token) {
-        ValidationResponse response = webClient.get()
-                .uri("/validate?token=" + token)
+        String response = webClient.get()
+                .header("Authorization", token)
                 .retrieve()
-                .bodyToMono(ValidationResponse.class)
+                .bodyToMono(String.class)
                 .block();
 
-        return response != null && response.isValid();
+        System.out.println("RASPUNS DIN AUTH: " + response);
+        return response != null && response.equals("Authentication successful!");
     }
 }

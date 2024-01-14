@@ -28,6 +28,7 @@ public class Controller implements ErrorController {
     @GetMapping("/products")
     public ResponseEntity<List<Product>> getAllProducts(HttpServletRequest request) {
         boolean isValidToken = tokenValidationService.validateToken(request.getHeader("Authorization"));
+        System.out.println("IS VALID? " + isValidToken);
         try {
             List<Product> products = new ArrayList<>(productRepository.findAll());
 

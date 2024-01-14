@@ -1,5 +1,6 @@
 """Authentication and authorization microservice"""
 
+import sys
 from flask import Flask, request, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
@@ -13,7 +14,7 @@ class Config:
     """Config class for Flask app"""
     SCHEDULER_API_ENABLED = True
     # SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost/authdb' # For local testing
-    SQLALCHEMY_DATABASE_URI = 'postgresql://user:password@postgresql-db-service:30208/postgres_db'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://user:password@postgresql-db-service:30219/postgres_db'
     SECRET_KEY = os.urandom(24)
     
 
@@ -52,24 +53,18 @@ def token_required(f):
         token = request.headers.get('Authorization')
 
         if not token:
-            return jsonify({'message': 'Token is missing'}), 401
+            return 'Token is missing', 401
 
         # Check if token is valid
-        try:
-            data = jwt.decode(jwt=token, key=app.config['SECRET_KEY'], algorithms=['HS256'])
-            stored_token = Token.query.filter_by(token=token, is_active=True).join(User).filter(User.username == data['username']).first()
-            if stored_token is None:
-                raise RuntimeError("Token is inactive or not found in database")
-            current_user = User.query.get(stored_token.user_id)
-        except jwt.ExpiredSignatureError:
-            return jsonify({'message': f'Token has expired'}), 401
-        except jwt.InvalidTokenError:
-            return jsonify({'message': f'Invalid token'}), 401
-        except RuntimeError as e:
-            return jsonify({'message': f'Runtime error: {e}'}), 401
-        except Exception as e:
-            return jsonify({'message': f'Token decoding error: {e}'}), 401
-        return f(current_user, *args, **kwargs)
+
+        stored_token = Token.query.filter_by(token=token, is_active=True).first()
+        print(stored_token, flush=True)
+        app.logger.info(stored_token)
+
+        if stored_token is None:
+            return 'Token has expired or is invalid', 405
+        
+        return f(*args, **kwargs)
 
     return decorated
 
@@ -131,13 +126,13 @@ def login():
 
     # Check if credentials are provided
     if not auth or not auth.username or not auth.password:
-        return make_response('Could not verify', 401, {'WWW-Authenticate': 'Basic realm="Login required!"'})
+        return make_response('Could not verify', 410, {'WWW-Authenticate': 'Basic realm="Login required!"'})
 
     # Check if user exists and password is correct
     user = User.query.filter_by(username=auth.username).first()
 
     if not user or not bcrypt.check_password_hash(user.password, auth.password):
-        return make_response('Could not verify', 401, {'WWW-Authenticate': 'Basic realm="Login required!"'})
+        return make_response('Could not verify', 411, {'WWW-Authenticate': 'Basic realm="Login required!"'})
 
     # Login and generate session token
     token = jwt.encode(payload={'username': user.username, 'exp': datetime.utcnow() + timedelta(hours=1)}, key=app.config['SECRET_KEY'], algorithm='HS256')
@@ -157,9 +152,9 @@ def login():
 
 @app.route('/protected', methods=['GET'])
 @token_required
-def protected(current_user):
+def protected():
     # Check user access using token
-    return jsonify({'message': f'Welcome, {current_user.username}! You have access to this protected resource.'})
+    return 'Authentication successful!'
 
 if __name__ == '__main__':
     with app.app_context():
@@ -169,4 +164,5 @@ if __name__ == '__main__':
             print("Connected to the database successfully.")
         except Exception as e:
             print("Failed to connect to the database: ", e)
-    app.run(host='0.0.0.0', debug=True)
+            sys.exit()
+    app.run(host="0.0.0.0", debug=True)

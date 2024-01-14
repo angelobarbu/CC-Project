@@ -48,7 +48,7 @@ resource "kubernetes_deployment" "store-app" {
 
           env {
             name  = "SPRING_DATASOURCE_URL"
-            value = "jdbc:postgresql://postgresql-db-service:30208/postgres_db"
+            value = "jdbc:postgresql://postgresql-db-service:30219/postgres_db"
           }
 
           env {
@@ -126,11 +126,6 @@ resource "kubernetes_deployment" "postgresql-db" {
           name  = "postgresql-db"
           image = "postgres:latest"
 
-#          volume_mount {
-#            mount_path     = "/var/lib/postgresql/data"
-#            name           = "postgres-data"
-#          }
-
           env {
             name  = "POSTGRES_USER"
             value = "user"
@@ -146,14 +141,6 @@ resource "kubernetes_deployment" "postgresql-db" {
             value = "postgres_db"
           }
         }
-
-#        volume {
-#          name = "postgresql-data"
-#
-#          persistent_volume_claim {
-#            claim_name = kubernetes_persistent_volume_claim.postgres-pvc.metadata[0].name
-#          }
-#        }
       }
     }
   }
@@ -172,7 +159,7 @@ resource "kubernetes_service" "postgresql-db-service" {
     }
 
     port {
-      port        = 30208
+      port        = 30219
       target_port = 5432
     }
   }
@@ -259,21 +246,6 @@ resource "kubernetes_deployment" "dbeaver" {
         container {
           name  = "dbeaver"
           image = "dbeaver/cloudbeaver:latest"
-
-#          env {
-#            name  = "POSTGRES_USER"
-#            value = "user"
-#          }
-#
-#          env {
-#            name  = "POSTGRES_PASSWORD"
-#            value = "password"
-#          }
-#
-#          env {
-#            name  = "POSTGRES_DB"
-#            value = "postgres_db"
-#          }
         }
       }
     }
